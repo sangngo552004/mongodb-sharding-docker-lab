@@ -1,0 +1,125 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # ------------------------------------
+  # Config Servers Replica Set (3 instances)
+  # Lưu trữ metadata của cluster
+  # ------------------------------------
+  cfg01:
+    image: mongo:6.0 
+    container_name: cfg01
+    volumes:
+      - cfg01_data:/data/db 
+    command: mongod --configsvr --replSet rs-config --dbpath /data/db --port 27017 --bind_ip_all
+    networks:
+      - mongo-cluster-net
+
+  cfg02:
+    image: mongo:6.0
+    container_name: cfg02
+    volumes:
+      - cfg02_data:/data/db
+    command: mongod --configsvr --replSet rs-config --dbpath /data/db --port 27017 --bind_ip_all
+    networks:
+      - mongo-cluster-net
+
+  cfg03:
+    image: mongo:6.0
+    container_name: cfg03
+    volumes:
+      - cfg03_data:/data/db
+    command: mongod --configsvr --replSet rs-config --dbpath /data/db --port 27017 --bind_ip_all
+    networks:
+      - mongo-cluster-net
+
+  # ------------------------------------
+  # Mongos Router (1 instance)
+  # Điểm truy cập duy nhất cho ứng dụng
+  # ------------------------------------
+  mongos:
+    image: mongo:6.0
+    container_name: mongos
+    ports:
+      - "27018:27017" 
+    command: mongos --configdb rs-config/cfg01:27017,cfg02:27017,cfg03:27017 --port 27017 --bind_ip_all
+    depends_on: 
+      - cfg01
+      - cfg02
+      - cfg03
+    networks:
+      - mongo-cluster-net
+  # ------------------------------------
+  # Shard 1 Replica Set (3 instances)
+  # ------------------------------------
+  shard01-a:
+    image: mongo:6.0
+    container_name: shard01-a
+    volumes:
+      - shard01a_data:/data/db
+    command: mongod --shardsvr --replSet rs-shard01 --dbpath /data/db --port 27017 --bind_ip_all
+    networks:
+      - mongo-cluster-net
+
+  shard01-b:
+    image: mongo:6.0
+    container_name: shard01-b
+    volumes:
+      - shard01b_data:/data/db
+    command: mongod --shardsvr --replSet rs-shard01 --dbpath /data/db --port 27017 --bind_ip_all
+    networks:
+      - mongo-cluster-net
+
+  shard01-c:
+    image: mongo:6.0
+    container_name: shard01-c
+    volumes:
+      - shard01c_data:/data/db
+    command: mongod --shardsvr --replSet rs-shard01 --dbpath /data/db --port 27017 --bind_ip_all
+    networks:
+      - mongo-cluster-net
+
+  # ------------------------------------
+  # Shard 2 Replica Set (3 instances)
+  # ------------------------------------
+  shard02-a:
+    image: mongo:6.0
+    container_name: shard02-a
+    volumes:
+      - shard02a_data:/data/db
+    command: mongod --shardsvr --replSet rs-shard02 --dbpath /data/db --port 27017 --bind_ip_all
+    networks:
+      - mongo-cluster-net
+
+  shard02-b:
+    image: mongo:6.0
+    container_name: shard02-b
+    volumes:
+      - shard02b_data:/data/db
+    command: mongod --shardsvr --replSet rs-shard02 --dbpath /data/db --port 27017 --bind_ip_all
+    networks:
+      - mongo-cluster-net
+
+  shard02-c:
+    image: mongo:6.0
+    container_name: shard02-c
+    volumes:
+      - shard02c_data:/data/db
+    command: mongod --shardsvr --replSet rs-shard02 --dbpath /data/db --port 27017 --bind_ip_all
+    networks:
+      - mongo-cluster-net
+
+networks:
+  mongo-cluster-net:
+    driver: bridge 
+
+volumes: 
+  cfg01_data:
+  cfg02_data:
+  cfg03_data:
+  shard01a_data:
+  shard01b_data:
+  shard01c_data:
+  shard02a_data:
+  shard02b_data:
+  shard02c_data:
